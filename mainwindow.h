@@ -5,6 +5,9 @@
 #include <QKeyEvent>
 #include <QWidget>
 #include <QStackedWidget>
+#include <string>
+#include <type_traits>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,6 +33,17 @@ private slots:
     void on_dichotomy_clicked();
     void on_newtonresult_clicked();
     void makePlotNewton(double a, double b, double minY, double maxY, const std::string &expression);
+    void on_sorting_clicked();
+
+    void on_addNewArrayButton_clicked();
+
+    void on_sortButton_clicked();
+
+    void makePlotArray(std::vector<int> arr);
+    void on_clearArray_clicked();
+
+    void on_randomArray_clicked();
+
 private:
     Ui::MainWindow *ui;
     QStackedWidget* stackedWidget;
