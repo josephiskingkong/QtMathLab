@@ -44,6 +44,13 @@ private slots:
 
     void on_randomArray_clicked();
 
+    void on_goldRatioResult_clicked();
+
+    void setButtonState(bool dichotomy, bool newton, bool sorting, bool coordinate);
+    void on_coordinate_clicked();
+    void on_coordinateBtn_clicked();
+
+    void makePlotCoordinate(double a, double b, double minY, double maxY, const std::string &expression);
 private:
     Ui::MainWindow *ui;
     QStackedWidget* stackedWidget;
