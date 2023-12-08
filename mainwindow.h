@@ -46,11 +46,21 @@ private slots:
 
     void on_goldRatioResult_clicked();
 
-    void setButtonState(bool dichotomy, bool newton, bool sorting, bool coordinate);
     void on_coordinate_clicked();
     void on_coordinateBtn_clicked();
 
     void makePlotCoordinate(double a, double b, double minY, double maxY, const std::string &expression);
+    void on_integralBtn_clicked();
+
+    void makeIntegralPlot(const std::string &expression, double a, double b, int n);
+    void setButtonState(bool dichotomy, bool newton, bool sorting, bool coordinate, bool integral);
+    void on_integral_clicked();
+    void on_integralBtn_2_clicked();
+
+    void on_integralBtn_3_clicked();
+
+    void makeTrapezoidPlot(const std::string &expression, double a, double b, int n);
+    void makeSimpsonPlot(const std::string &expression, double a, double b, int n);
 private:
     Ui::MainWindow *ui;
     QStackedWidget* stackedWidget;

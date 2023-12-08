@@ -296,8 +296,8 @@ int bubbleSort(std::vector<int>& arr) {
             if (arr[j] > arr[j + 1]) {
                 std::swap(arr[j], arr[j + 1]);
             }
-            iterations++;
         }
+        iterations++;
     }
     return iterations;
 }
@@ -331,6 +331,7 @@ int cocktailSort(std::vector<int>& arr) {
                 std::swap(arr[i], arr[i + 1]);
                 swapped = true;
             }
+            iterations++;
         }
         if (!swapped) break;
         swapped = false;
@@ -340,9 +341,9 @@ int cocktailSort(std::vector<int>& arr) {
                 std::swap(arr[i], arr[i + 1]);
                 swapped = true;
             }
+            iterations++;
         }
         start++;
-        iterations++;
     }
     return iterations;
 }
@@ -415,13 +416,13 @@ double findMinCoordinate(double x, double h, const std::string& expression, doub
         if (f_current > f_prev) {
             x = x_prev;
             if (h > epsilon) {
-                h /= 2.0; // Уменьшаем шаг вдвое
+                h /= 2.0;
             } else {
-                break; // Минимальный шаг достигнут
+                break;
             }
         } else {
             f_prev = f_current;
-            h *= 1.1; // Увеличиваем шаг на 10%
+            h *= 1.1;
         }
 
         iterations++;
@@ -452,6 +453,7 @@ double findMaxCoordinate(double x, double h, const std::string& expression, doub
         } else {
             f_prev = f_current;
             h *= 1.1;
+            h = -h;
         }
 
         iterations++;
@@ -667,36 +669,43 @@ QStackedWidget* MainWindow::getStackedWidget() {
     return ui->stackedWidget;
 }
 
-void MainWindow::setButtonState(bool dichotomy, bool newton, bool sorting, bool coordinate)
+void MainWindow::setButtonState(bool dichotomy, bool newton, bool sorting, bool coordinate, bool integral)
 {
     ui->dichotomy->setEnabled(dichotomy);
     ui->newton->setEnabled(newton);
     ui->sorting->setEnabled(sorting);
     ui->coordinate->setEnabled(coordinate);
+    ui->integral->setEnabled(integral);
 }
 
 void MainWindow::on_dichotomy_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
-    setButtonState(false, true, true, true);
+    setButtonState(false, true, true, true, true);
 }
 
 void MainWindow::on_newton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
-    setButtonState(true, false, true, true);
+    setButtonState(true, false, true, true, true);
 }
 
 void MainWindow::on_sorting_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
-    setButtonState(true, true, false, true);
+    setButtonState(true, true, false, true, true);
 }
 
 void MainWindow::on_coordinate_clicked()
 {
     ui->stackedWidget->setCurrentIndex(3);
-    setButtonState(true, true, true, false);
+    setButtonState(true, true, true, false, true);
+}
+
+void MainWindow::on_integral_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(4);
+    setButtonState(true, true, true, true, false);
 }
 
 
@@ -959,9 +968,6 @@ void MainWindow::on_goldRatioResult_clicked()
     makePlotNewton(a, b, evaluateMathExpression(expression, minimumX), evaluateMathExpression(expression, maximumX), expression);
 }
 
-
-
-
 void MainWindow::on_coordinateBtn_clicked()
 {
     QString resultString = "<b>Результат:<br>";
@@ -1024,5 +1030,349 @@ void MainWindow::on_coordinateBtn_clicked()
 
     ui->coordinateResult->setText(resultString);
     makePlotCoordinate(a, b, evaluateMathExpression(expression, minimumX), evaluateMathExpression(expression, maximumX), expression);
+}
+
+double rectangleMethod(double a, double b, double epsilon, const std::string& expression) {
+    int n = 1;
+    double integral = 0.0;
+    double integral_prev = 0.0;
+
+    do {
+        integral_prev = integral;
+        integral = 0.0;
+        double h = (b - a) / n;
+
+        for (int i = 0; i < n; ++i) {
+            double x = a + h * (i + 0.5);
+            integral += evaluateMathExpression(expression, x);
+        }
+
+        integral *= h;
+        n *= 2;
+    } while (std::abs(integral - integral_prev) > epsilon);
+
+    return integral;
+}
+
+void MainWindow::makeIntegralPlot(const std::string& expression, double a, double b, int n) {
+    QCustomPlot* plotContainer = ui->integralPlot;
+    plotContainer->clearPlottables();
+
+    QCPCurve *functionCurve = new QCPCurve(plotContainer->xAxis, plotContainer->yAxis);
+    functionCurve->setPen(QPen(Qt::blue));
+
+    QVector<double> xFunc(500), yFunc(500);
+    for (int i = 0; i < 500; ++i) {
+        double x = a + i*(b - a)/499;
+        xFunc[i] = x;
+        yFunc[i] = evaluateMathExpression(expression, x);
+    }
+    functionCurve->setData(xFunc, yFunc);
+
+    QCPBars *integralBars = new QCPBars(plotContainer->xAxis, plotContainer->yAxis);
+    integralBars->setPen(QPen(Qt::red));
+    integralBars->setBrush(QBrush(QColor(255, 0, 0, 50)));
+
+    QVector<double> xRect(n), yRect(n);
+    double h = (b - a) / n;
+    for (int i = 0; i < n; ++i) {
+        double x = a + i * h + h/2;
+        xRect[i] = x;
+        yRect[i] = evaluateMathExpression(expression, x);
+    }
+    integralBars->setWidth(h * 0.9);
+    integralBars->setData(xRect, yRect);
+
+    plotContainer->rescaleAxes();
+    plotContainer->replot();
+}
+
+void MainWindow::on_integralBtn_clicked()
+{
+    QString resultString = "<b>Результат:<br>";
+
+    double a = ui->integralStart->text().toDouble();
+    double b = ui->integralEnd->text().toDouble();
+    double e = ui->integralEpsilon->text().toDouble();
+    const std::string expression = ui->integralExpression->text().toStdString();
+
+    if (ui->integralEpsilon->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите количество разбиений</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralStart->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите начальную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralEnd->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите конечную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (e < 0 || e > 10000) {
+        resultString += "<font color='red'>Ошибка: Количество разбиений введено некорректно</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (a >= b) {
+        resultString += "<font color='red'>Ошибка: Начальная точка равна или правее конечной.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (std::isnan(evaluateMathExpression(expression, (a+b) / 2.0))) {
+        resultString += "<font color='red'>Ошибка: Функция не может быть вычислена.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    double integralValue = rectangleMethod(a, b, e, expression);
+    resultString += "Значение интеграла: " + QString::number(integralValue) + "<br>";
+
+    ui->integralResult->setText(resultString);
+
+    ui->integralResult->setText(resultString);
+    int n = e;
+    makeIntegralPlot(expression, a, b, n);
+}
+
+double trapezoidMethod(double a, double b, int n, const std::string& expression) {
+    if (n <= 0 || a >= b) return nan("");
+
+    double h = (b - a) / n;
+    double integral = 0.0;
+
+    for (int i = 0; i <= n; ++i) {
+        double x = a + i * h;
+        double term = evaluateMathExpression(expression, x);
+        if (std::isnan(term) || std::isinf(term)) return term;
+
+        if (i == 0 || i == n) {
+            integral += term / 2;
+        } else {
+            integral += term;
+        }
+    }
+
+    integral *= h;
+    return integral;
+}
+
+double simpsonMethod(double a, double b, int n, const std::string& expression) {
+    if (n <= 0 || a >= b || n % 2 != 0) return nan("");
+
+    double h = (b - a) / n;
+    double integral = evaluateMathExpression(expression, a) + evaluateMathExpression(expression, b);
+
+    for (int i = 1; i < n; i++) {
+        double x = a + i * h;
+        double term = evaluateMathExpression(expression, x);
+        if (std::isnan(term) || std::isinf(term)) return term;
+
+        integral += (i % 2 == 0 ? 2 : 4) * term;
+    }
+
+    integral *= h / 3;
+    return integral;
+}
+
+
+void MainWindow::makeTrapezoidPlot(const std::string& expression, double a, double b, int n) {
+    QCustomPlot* plotContainer = ui->integralPlot;
+    plotContainer->clearPlottables();
+
+    QCPCurve *functionCurve = new QCPCurve(plotContainer->xAxis, plotContainer->yAxis);
+    functionCurve->setPen(QPen(Qt::blue));
+
+    QVector<double> xFunc(500), yFunc(500);
+    for (int i = 0; i < 500; ++i) {
+        double x = a + i * (b - a) / 499;
+        xFunc[i] = x;
+        yFunc[i] = evaluateMathExpression(expression, x);
+    }
+    functionCurve->setData(xFunc, yFunc);
+
+    double h = (b - a) / n;
+    for (int i = 0; i < n; ++i) {
+        double x0 = a + i * h;
+        double x1 = a + (i + 1) * h;
+        double y0 = evaluateMathExpression(expression, x0);
+        double y1 = evaluateMathExpression(expression, x1);
+
+
+        QVector<double> xTrap(4), yTrap(4);
+        xTrap[0] = x0; yTrap[0] = 0;
+        xTrap[1] = x0; yTrap[1] = y0;
+        xTrap[2] = x1; yTrap[2] = y1;
+        xTrap[3] = x1; yTrap[3] = 0;
+
+
+        QCPGraph *trapezoidGraph = plotContainer->addGraph();
+        trapezoidGraph->setData(xTrap, yTrap);
+        trapezoidGraph->setPen(QPen(Qt::red));
+        trapezoidGraph->setBrush(QBrush(QColor(255, 0, 0, 30)));
+        trapezoidGraph->setLineStyle(QCPGraph::lsLine);
+    }
+
+    plotContainer->rescaleAxes();
+    plotContainer->replot();
+}
+
+void MainWindow::makeSimpsonPlot(const std::string& expression, double a, double b, int n) {
+    QCustomPlot* plotContainer = ui->integralPlot;
+    plotContainer->clearPlottables();
+
+    QCPCurve *functionCurve = new QCPCurve(plotContainer->xAxis, plotContainer->yAxis);
+    functionCurve->setPen(QPen(Qt::blue));
+
+    QVector<double> xFunc(500), yFunc(500);
+    for (int i = 0; i < 500; ++i) {
+        double x = a + i * (b - a) / 499;
+        xFunc[i] = x;
+        yFunc[i] = evaluateMathExpression(expression, x);
+    }
+    functionCurve->setData(xFunc, yFunc);
+
+    QCPBars *integralBars = new QCPBars(plotContainer->xAxis, plotContainer->yAxis);
+    integralBars->setPen(QPen(Qt::red));
+    integralBars->setBrush(QBrush(QColor(255, 0, 0, 50)));
+
+    QVector<double> xRect(n), yRect(n);
+    double h = (b - a) / n;
+
+    for (int i = 0; i < n; i += 2) {
+        double x = a + i * h;
+        double midX = a + (i + 1) * h;
+        double nextX = a + (i + 2) * h;
+
+        double avgHeight = (evaluateMathExpression(expression, x) + 4 * evaluateMathExpression(expression, midX) + evaluateMathExpression(expression, nextX)) / 6;
+
+        xRect[i] = (x + nextX) / 2;
+        yRect[i] = avgHeight;
+    }
+
+    integralBars->setWidth(h * 0.9);
+    integralBars->setData(xRect, yRect);
+
+    plotContainer->rescaleAxes();
+    plotContainer->replot();
+}
+
+void MainWindow::on_integralBtn_2_clicked()
+{
+    QString resultString = "<b>Результат:<br>";
+
+    double a = ui->integralStart->text().toDouble();
+    double b = ui->integralEnd->text().toDouble();
+    double e = ui->integralEpsilon->text().toDouble();
+    const std::string expression = ui->integralExpression->text().toStdString();
+
+
+    if (ui->integralEpsilon->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите количество разбиений</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralStart->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите начальную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralEnd->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите конечную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (e < 0 || e > 10000) {
+        resultString += "<font color='red'>Ошибка: Количество разбиений введено некорректно</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (a >= b) {
+        resultString += "<font color='red'>Ошибка: Начальная точка равна или правее конечной.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (std::isnan(evaluateMathExpression(expression, (a+b) / 2.0))) {
+        resultString += "<font color='red'>Ошибка: Функция не может быть вычислена.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    double integralValue = trapezoidMethod(a, b, e, expression);
+    resultString += "Значение интеграла: " + QString::number(integralValue) + "<br>";
+
+    ui->integralResult->setText(resultString);
+
+    ui->integralResult->setText(resultString);
+    int n = e;
+    makeTrapezoidPlot(expression, a, b, n);
+}
+
+
+void MainWindow::on_integralBtn_3_clicked()
+{
+    QString resultString = "<b>Результат:<br>";
+
+    double a = ui->integralStart->text().toDouble();
+    double b = ui->integralEnd->text().toDouble();
+    double e = ui->integralEpsilon->text().toDouble();
+    const std::string expression = ui->integralExpression->text().toStdString();
+
+    if (ui->integralEpsilon->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите количество разбиений</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralStart->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите начальную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (ui->integralEnd->text() == "") {
+        resultString += "<font color='red'>Ошибка: Введите конечную точку</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (e < 0 || e > 10000) {
+        resultString += "<font color='red'>Ошибка: Количество разбиений введено некорректно</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (a >= b) {
+        resultString += "<font color='red'>Ошибка: Начальная точка равна или правее конечной.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    if (std::isnan(evaluateMathExpression(expression, (a+b) / 2.0))) {
+        resultString += "<font color='red'>Ошибка: Функция не может быть вычислена.</font>";
+        ui->integralResult->setText(resultString);
+        return;
+    }
+
+    double integralValue = simpsonMethod(a, b, e, expression);
+    resultString += "Значение интеграла: " + QString::number(integralValue) + "<br>";
+
+    ui->integralResult->setText(resultString);
+
+    ui->integralResult->setText(resultString);
+    int n = e;
+    makeSimpsonPlot(expression, a, b, n);
 }
 
