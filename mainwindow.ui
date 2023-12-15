@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="dichotomyPage">
      <property name="font">
@@ -794,6 +794,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <height>31</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <family>.AppleSystemUIFont</family>
+       </font>
+      </property>
       <property name="lineWidth">
        <number>0</number>
       </property>
@@ -951,6 +956,169 @@ li.checked::marker { content: &quot;\2612&quot;; }
       <property name="text">
        <string>Симпсон</string>
       </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="slaePage">
+     <widget class="QPushButton" name="addSizeMatrix">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>580</y>
+        <width>31</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>+</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="minusSizeMatrix">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>580</y>
+        <width>31</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="randomMatrixBtn">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>620</y>
+        <width>101</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Рандом</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="resultBtnMatrix">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>660</y>
+        <width>101</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Решить</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="gauss">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>590</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Гаус</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="jordan">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>610</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Жордан</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="kramer">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>630</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Крамер</string>
+      </property>
+     </widget>
+     <widget class="QTextBrowser" name="slaeResult">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>590</y>
+        <width>511</width>
+        <height>111</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="gridSizeLabel">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>593</y>
+        <width>21</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0</string>
+      </property>
+     </widget>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>781</width>
+        <height>551</height>
+       </rect>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>3400</width>
+         <height>1300</height>
+        </rect>
+       </property>
+       <widget class="QWidget" name="gridLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>1281</width>
+          <height>921</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout" rowstretch="0">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetFixedSize</enum>
+         </property>
+         <property name="spacing">
+          <number>0</number>
+         </property>
+        </layout>
+       </widget>
+      </widget>
      </widget>
     </widget>
    </widget>

@@ -5,6 +5,7 @@
 #include <QKeyEvent>
 #include <QWidget>
 #include <QStackedWidget>
+#include <QHBoxLayout>
 #include <string>
 #include <type_traits>
 
@@ -61,6 +62,20 @@ private slots:
 
     void makeTrapezoidPlot(const std::string &expression, double a, double b, int n);
     void makeSimpsonPlot(const std::string &expression, double a, double b, int n);
+    void on_addSizeMatrix_clicked();
+
+    void on_minusSizeMatrix_clicked();
+
+    void clearGridLayout();
+    void createMatrixRow(int row);
+    void changeMatrixSize(int newSize);
+
+    void on_randomMatrixBtn_clicked();
+
+    void filterInput(const QString &text);
+    void on_resultBtnMatrix_clicked();
+
+    QVector<double> solveSLAE();
 private:
     Ui::MainWindow *ui;
     QStackedWidget* stackedWidget;

@@ -11,6 +11,8 @@
 #include <random>
 #include <QElapsedTimer>
 #include <chrono>
+#include <QRandomGenerator>
+#include <QLocale>
 
 std::vector<int> array;
 
@@ -1371,8 +1373,280 @@ void MainWindow::on_integralBtn_3_clicked()
 
     ui->integralResult->setText(resultString);
 
-    ui->integralResult->setText(resultString);
     int n = e;
     makeSimpsonPlot(expression, a, b, n);
 }
+
+QVector<QHBoxLayout*> horizontalLayouts;
+int matrixSize = 0;
+
+void MainWindow::clearGridLayout() {
+    while (QLayoutItem* item = ui->gridLayout->takeAt(0)) {
+        if (QWidget* widget = item->widget()) {
+            delete widget;
+        }
+        delete item;
+    }
+}
+
+void MainWindow::filterInput(const QString& text) {
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
+    if (lineEdit) {
+        QString newText = text;
+        newText.remove(',');
+        if (newText != text) {
+            lineEdit->setText(newText);
+        }
+    }
+}
+
+
+void MainWindow::createMatrixRow(int row) {
+    QDoubleValidator* validator = new QDoubleValidator(-9999.99, 9999.99, 2, this);
+    validator->setNotation(QDoubleValidator::StandardNotation);
+    validator->setLocale(QLocale::C);
+
+    QFont font = QFont();
+    font.setPointSize(std::max(15, 25 - matrixSize));
+    int editWidth = std::max(30, 55 - matrixSize * 2);
+
+    for (int i = 0; i < matrixSize; ++i) {
+        QLineEdit* edit = new QLineEdit(this);
+        edit->setValidator(validator);
+        edit->setFont(font);
+        edit->setFixedWidth(editWidth);
+
+        QLabel* label = new QLabel(QString("x%1").arg(i + 1) + (i < matrixSize - 1 ? " +" : " ="), this);
+        label->setFont(font);
+
+        ui->gridLayout->addWidget(edit, row, 2 * i);
+        ui->gridLayout->addWidget(label, row, 2 * i + 1);
+    }
+
+    QLineEdit* resultEdit = new QLineEdit(this);
+    resultEdit->setValidator(validator);
+    resultEdit->setFont(font);
+    resultEdit->setFixedWidth(editWidth);
+    ui->gridLayout->addWidget(resultEdit, row, 2 * matrixSize + 1);
+}
+
+
+void MainWindow::changeMatrixSize(int newSize) {
+    clearGridLayout();
+
+    matrixSize = newSize;
+
+    for (int i = 0; i < newSize; ++i) {
+        createMatrixRow(i);
+    }
+
+    ui->gridLayout->update();
+}
+
+void MainWindow::on_addSizeMatrix_clicked() {
+    if (matrixSize < 50) {
+        changeMatrixSize(matrixSize + 1);
+        ui->gridSizeLabel->setText(QString::number(matrixSize));
+    }
+}
+
+void MainWindow::on_minusSizeMatrix_clicked() {
+    if (matrixSize > 1) {
+        changeMatrixSize(matrixSize - 1);
+        ui->gridSizeLabel->setText(QString::number(matrixSize));
+    }
+}
+
+
+void MainWindow::on_randomMatrixBtn_clicked() {
+    for (int row = 0; row < matrixSize; ++row) {
+        for (int col = 0; col <= matrixSize; ++col) {
+            QLayoutItem* item = ui->gridLayout->itemAtPosition(row, col * 2);
+            if (item != nullptr) {
+                QLineEdit* lineEdit = qobject_cast<QLineEdit*>(item->widget());
+                if (lineEdit) {
+                    int randomValue = QRandomGenerator::global()->bounded(-99, 100);
+                    lineEdit->setText(QString::number(randomValue));
+                }
+            }
+        }
+    }
+}
+
+QVector<double> MainWindow::solveSLAE() {
+    QVector<QVector<double>> matrix(matrixSize, QVector<double>(matrixSize));
+    QVector<double> b(matrixSize);
+
+    for (int i = 0; i < matrixSize; ++i) {
+        for (int j = 0; j < matrixSize; ++j) {
+            QLineEdit* edit = qobject_cast<QLineEdit*>(ui->gridLayout->itemAtPosition(i, 2 * j)->widget());
+            if (edit) {
+                matrix[i][j] = edit->text().toDouble();
+            }
+        }
+        QLineEdit* resultEdit = qobject_cast<QLineEdit*>(ui->gridLayout->itemAtPosition(i, 2 * matrixSize + 1)->widget());
+        if (resultEdit) {
+            b[i] = resultEdit->text().toDouble();
+        }
+    }
+
+    QVector<double> x(matrixSize);
+
+    for (int i = 0; i < matrixSize; ++i) {
+        double diag = matrix[i][i];
+        for (int j = i; j < matrixSize; ++j) {
+            matrix[i][j] /= diag;
+        }
+        b[i] /= diag;
+
+        for (int k = i + 1; k < matrixSize; ++k) {
+            double mult = matrix[k][i];
+            for (int j = i; j < matrixSize; ++j) {
+                matrix[k][j] -= mult * matrix[i][j];
+            }
+            b[k] -= mult * b[i];
+        }
+    }
+
+    for (int i = matrixSize - 1; i >= 0; --i) {
+        double sum = 0.0;
+        for (int j = i + 1; j < matrixSize; ++j) {
+            sum += matrix[i][j] * x[j];
+        }
+        x[i] = (b[i] - sum) / matrix[i][i];
+    }
+
+    return x;
+}
+
+double determinant(const QVector<QVector<double>>& matrix) {
+    double det = 0;
+    int n = matrix.size();
+    if (n == 1) {
+        return matrix[0][0];
+    }
+    if (n == 2) {
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    }
+    for (int p = 0; p < n; p++) {
+        QVector<QVector<double>> subMatrix(n - 1, QVector<double>(n - 1));
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (j < p) {
+                    subMatrix[i - 1][j] = matrix[i][j];
+                } else if (j > p) {
+                    subMatrix[i - 1][j - 1] = matrix[i][j];
+                }
+            }
+        }
+        det += matrix[0][p] * determinant(subMatrix) * (p % 2 == 0 ? 1 : -1);
+    }
+    return det;
+}
+
+QVector<double> solveSLAEKramer(const QVector<QVector<double>>& matrix, const QVector<double>& b) {
+    int n = matrix.size();
+    QVector<double> x(n);
+    double det = determinant(matrix);
+
+    if (det == 0) {
+        return {};
+    }
+
+    for (int j = 0; j < n; j++) {
+        QVector<QVector<double>> tempMatrix(matrix);
+        for (int i = 0; i < n; i++) {
+            tempMatrix[i][j] = b[i];
+        }
+        x[j] = determinant(tempMatrix) / det;
+    }
+
+    return x;
+}
+
+QVector<double> solveSLAEJordanGauss(QVector<QVector<double>> matrix, QVector<double> b) {
+    int n = matrix.size();
+    QVector<double> x(n);
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i != j) {
+                double ratio = matrix[j][i] / matrix[i][i];
+                for (int k = 0; k < n; k++) {
+                    matrix[j][k] -= ratio * matrix[i][k];
+                }
+                b[j] -= ratio * b[i];
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        x[i] = b[i] / matrix[i][i];
+    }
+
+    return x;
+}
+
+void MainWindow::on_resultBtnMatrix_clicked() {
+    QVector<QVector<double>> matrix(matrixSize, QVector<double>(matrixSize));
+    QVector<double> b(matrixSize);
+
+    for (int i = 0; i < matrixSize; ++i) {
+        for (int j = 0; j < matrixSize; ++j) {
+            QLineEdit* edit = qobject_cast<QLineEdit*>(ui->gridLayout->itemAtPosition(i, 2 * j)->widget());
+            if (edit) {
+                matrix[i][j] = edit->text().toDouble();
+            }
+        }
+        QLineEdit* resultEdit = qobject_cast<QLineEdit*>(ui->gridLayout->itemAtPosition(i, 2 * matrixSize + 1)->widget());
+        if (resultEdit) {
+            b[i] = resultEdit->text().toDouble();
+        }
+    }
+
+    bool isGauss = ui->gauss->isChecked();
+    bool isJordan = ui->jordan->isChecked();
+    bool isKramer = ui->kramer->isChecked();
+
+    QString resultStr = "Результаты СЛАУ:\n";
+    QElapsedTimer timer;
+
+    if (isGauss) {
+        timer.start();
+        QVector<double> x = solveSLAE();
+        long long gaussTime = timer.nsecsElapsed();
+        resultStr += "Метод Гаусса:\n";
+        for (int i = 0; i < x.size(); ++i) {
+            resultStr += QString("x%1 = %2\n").arg(i + 1).arg(x[i]);
+        }
+        resultStr += "Время: " + QString::number(gaussTime) + " мс\n\n";
+    }
+
+    if (isJordan) {
+        timer.start();
+        QVector<double> x = solveSLAEJordanGauss(matrix, b);
+        long long jordanTime = timer.nsecsElapsed();
+        resultStr += "Метод Жордана-Гаусса:\n";
+        for (int i = 0; i < x.size(); ++i) {
+            resultStr += QString("x%1 = %2\n").arg(i + 1).arg(x[i]);
+        }
+        resultStr += "Время: " + QString::number(jordanTime) + " мс\n\n";
+    }
+
+    if (isKramer) {
+        timer.start();
+        QVector<double> x = solveSLAEKramer(matrix, b);
+        long long kramerTime = timer.nsecsElapsed();
+        resultStr += "Метод Крамера:\n";
+        for (int i = 0; i < x.size(); ++i) {
+            resultStr += QString("x%1 = %2\n").arg(i + 1).arg(x[i]);
+        }
+        resultStr += "Время: " + QString::number(kramerTime) + " мс\n\n";
+    }
+
+    ui->slaeResult->setText(resultStr);
+
+    QMessageBox::information(this, "Время решения СЛАУ", resultStr);
+}
+
 
